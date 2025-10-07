@@ -1,38 +1,29 @@
-from core.constants import composio
-import sys
+from core.agent import GoogleWorkspaceCopilot
+from core.tools import show_banner, isValidMail
 import asyncio
-from langchain_mcp_adapters.client import MultiServerMCPClient
 
-async def create_tool_router_session(user_email):
-    session = composio.experimental.tool_router.create_session(
-            user_id=user_email,
-            toolkits=[
-                {'toolkit': 'gmail'}
-            ],
-        )
-    # session = composio.experimental.tool_router.create_session(user_id=user_email)
-    return session['url']
 
-async def setup_mcp_client(user_email: str) -> MultiServerMCPClient:
-        """Set up LangChain MCP client for a user."""
-
-        mcp_url = await create_tool_router_session(user_email)
-        client = MultiServerMCPClient(
-            {
-                "tool_router": {
-                    "url": mcp_url,
-                    "transport": "streamable_http"  # recommended transport
-                }
-            }
-        )
-        return client
 async def main():
+    show_banner()
+    user_email = input("Please enter your email: ").strip()
+    while not isValidMail(user_email):
+            print("❌ Invalid email address. Please try again.")
+    agent = GoogleWorkspaceCopilot()
 
-    # mcp_url = create_tool_router_session("devanshbansal2021@gmail.com")
-    client = await setup_mcp_client("devanshbansal2021@gmail.com")
-    tools = await client.get_tools()
-    print(tools)
-    
+    print("Type 'exit' to quit.\n")
+
+    while True:
+        prompt = input("Enter a command: ")
+        if prompt.lower() == "exit":
+            print("Exiting...")
+            break
+
+        response = await agent.run_command(user_email, prompt)
+        print("Response:", response)
+
+    await agent.cleanup_user(user_email)
+
+
 
 if __name__ == "__main__":
     asyncio.run(main())
